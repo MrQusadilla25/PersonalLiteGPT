@@ -1,38 +1,60 @@
 // api/chat.js
-import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const Groq = require("groq-sdk");
 
-export default async function handler(req, res) {
-  // Allow only POST
+// Client using your env var
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+module.exports = async (req, res) => {
+  // Only allow POST
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
+    res.statusCode = 405;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
 
   try {
-    const { messages } = req.body;
+    // Parse the body manually (required on Vercel)
+    let body = "";
+    await new Promise((resolve, reject) => {
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", resolve);
+      req.on("error", reject);
+    });
 
-    if (!messages || !Array.isArray(messages)) {
-      res.status(400).json({ error: "Missing or invalid 'messages' array" });
+    const parsed = JSON.parse(body || "{}");
+
+    const { messages } = parsed;
+
+    if (!messages) {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "'messages' missing" }));
       return;
     }
 
-    // Call OpenAI (you can change model to whatever you like)
+    // Call Groq with Llama 3.1 70B (AMAZING model, totally free)
     const completion = await client.chat.completions.create({
-      model: "gpt-4.1-mini", // or a bigger model if you want
+      model: "llama3-70b-8192",
       messages,
+      temperature: 0.6,
     });
 
     const reply = completion.choices[0].message;
 
-    res.status(200).json({ reply });
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ reply }));
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ error: "Something went wrong", details: err.message });
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        error: "Groq API error",
+        details: err.message,
+      })
+    );
   }
-}
+};
