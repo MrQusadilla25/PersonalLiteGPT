@@ -4,17 +4,68 @@
     <meta charset="UTF-8" />
     <title>Lite AI Chat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
     <style>
+      :root {
+        --bg: #020202;
+        --bg-alt: #0a0a0a;
+        --border: #2f2f2f;
+        --text: #f5f5f5;
+        --text-soft: #a3a3a3;
+        --accent: #ffffff;
+        --accent-soft: #e5e5e5;
+        --bubble-user-bg: #ffffff;
+        --bubble-user-text: #000000;
+        --bubble-ai-bg: #101010;
+        --bubble-ai-border: #2b2b2b;
+        --error-bg: #1f0000;
+        --error-text: #ffb4b4;
+      }
+
+      body.light {
+        --bg: #fafafa;
+        --bg-alt: #ffffff;
+        --border: #e5e5e5;
+        --text: #111111;
+        --text-soft: #737373;
+        --accent: #000000;
+        --accent-soft: #222222;
+        --bubble-user-bg: #000000;
+        --bubble-user-text: #ffffff;
+        --bubble-ai-bg: #ffffff;
+        --bubble-ai-border: #e5e5e5;
+        --error-bg: #fff1f1;
+        --error-text: #b91c1c;
+      }
+
       * {
         box-sizing: border-box;
       }
 
       body {
         margin: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background: #020617;
-        color: #e5e7eb;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #111 0, var(--bg) 38%);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        transition: background 0.25s ease, color 0.25s ease;
+      }
+
+      .app {
+        max-width: 960px;
+        margin: 0 auto;
+        width: 100%;
         display: flex;
         flex-direction: column;
         height: 100vh;
@@ -22,32 +73,94 @@
 
       header {
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #1f2937;
-        font-weight: 600;
-        font-size: 0.95rem;
+        border-bottom: 1px solid var(--border);
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        background: #020617;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        justify-content: space-between;
+        gap: 0.75rem;
+        backdrop-filter: blur(16px);
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.55),
+          transparent
+        );
       }
 
-      header span {
-        opacity: 0.7;
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .brand-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+      }
+
+      .brand-text-main {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .brand-text-sub {
+        font-size: 0.7rem;
+        color: var(--text-soft);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .icon-btn {
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.1);
+        color: var(--text-soft);
+        border-radius: 999px;
+        padding: 0.35rem 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.8rem;
+        cursor: pointer;
+        transition: border 0.2s ease, background 0.2s ease, color 0.2s ease,
+          transform 0.1s ease;
+      }
+
+      .icon-btn span {
+        margin-left: 0.3rem;
+      }
+
+      .icon-btn:hover {
+        border-color: var(--accent-soft);
+        color: var(--accent-soft);
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-0.5px);
+      }
+
+      .icon-btn:active {
+        transform: translateY(0.5px) scale(0.98);
       }
 
       #chat {
         flex: 1;
         overflow-y: auto;
-        padding: 1rem;
+        padding: 1rem 1rem 0.75rem;
       }
 
       .message {
-        margin-bottom: 0.75rem;
-        max-width: 800px;
+        margin-bottom: 0.85rem;
+        max-width: 80%;
+        opacity: 0;
+        transform: translateY(4px);
+        animation: fade-in-up 0.16s ease forwards;
       }
 
       .message.user {
@@ -61,144 +174,379 @@
       .role {
         font-size: 0.7rem;
         text-transform: uppercase;
-        opacity: 0.6;
+        letter-spacing: 0.06em;
+        color: var(--text-soft);
         margin-bottom: 0.2rem;
       }
 
       .bubble {
-        padding: 0.6rem 0.8rem;
-        border-radius: 0.7rem;
+        padding: 0.55rem 0.8rem;
+        border-radius: 0.9rem;
         font-size: 0.9rem;
         white-space: pre-wrap;
         word-wrap: break-word;
+        line-height: 1.4;
       }
 
       .user .bubble {
-        background: #2563eb;
-        color: #e5e7eb;
+        background: var(--bubble-user-bg);
+        color: var(--bubble-user-text);
       }
 
       .assistant .bubble {
-        background: #020617;
-        border: 1px solid #1f2937;
+        background: var(--bubble-ai-bg);
+        border: 1px solid var(--bubble-ai-border);
       }
 
       .system .bubble {
-        background: #111827;
-        border: 1px dashed #374151;
+        border-radius: 0.7rem;
+        border: 1px dashed var(--border);
         font-size: 0.8rem;
-        opacity: 0.85;
+        color: var(--text-soft);
       }
 
       #input-area {
-        padding: 0.5rem;
-        border-top: 1px solid #1f2937;
+        padding: 0.65rem 1rem;
+        border-top: 1px solid var(--border);
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.7),
+          rgba(0, 0, 0, 0.1)
+        );
         display: flex;
-        gap: 0.5rem;
-        background: #020617;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      #status {
+        font-size: 0.75rem;
+        color: var(--text-soft);
+        min-height: 0.9rem;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 0.45rem;
+        align-items: flex-end;
       }
 
       #prompt {
         flex: 1;
         resize: none;
-        padding: 0.5rem 0.6rem;
-        border-radius: 0.4rem;
-        border: 1px solid #374151;
-        background: #020617;
-        color: #e5e7eb;
+        padding: 0.55rem 0.7rem;
+        border-radius: 0.7rem;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text);
         font-size: 0.9rem;
         max-height: 7rem;
         min-height: 2.2rem;
+        outline: none;
+        transition: border 0.15s ease, background 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      body.light #prompt {
+        background: rgba(255, 255, 255, 0.9);
       }
 
       #prompt::placeholder {
-        color: #6b7280;
+        color: var(--text-soft);
+      }
+
+      #prompt:focus {
+        border-color: var(--accent-soft);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
       }
 
       #send {
-        padding: 0 1.1rem;
-        border-radius: 0.4rem;
-        border: none;
-        background: #22c55e;
-        color: #052e16;
-        font-weight: 600;
+        border-radius: 999px;
+        border: 1px solid var(--accent-soft);
+        background: var(--accent);
+        color: var(--bubble-user-text);
+        padding: 0.55rem 0.9rem;
         font-size: 0.9rem;
-        cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 0.3rem;
+        cursor: pointer;
+        min-width: 2.5rem;
+        transition: transform 0.1s ease, box-shadow 0.15s ease,
+          opacity 0.2s ease, filter 0.15s ease;
+      }
+
+      #send i {
+        font-size: 0.9rem;
+      }
+
+      #send span {
+        display: none;
+      }
+
+      @media (min-width: 640px) {
+        #send span {
+          display: inline;
+        }
+      }
+
+      #send:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
+      }
+
+      #send:active {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: none;
       }
 
       #send:disabled {
-        opacity: 0.5;
+        opacity: 0.4;
         cursor: default;
-      }
-
-      #status {
-        font-size: 0.75rem;
-        opacity: 0.7;
-        padding: 0 1rem 0.25rem;
+        box-shadow: none;
+        transform: none;
       }
 
       #error-bar {
         display: none;
-        background: #7f1d1d;
-        color: #fee2e2;
-        padding: 0.4rem 0.75rem;
+        background: var(--error-bg);
+        color: var(--error-text);
+        padding: 0.35rem 1rem;
         font-size: 0.8rem;
         text-align: center;
+        border-bottom: 1px solid var(--border);
       }
 
       #error-bar span {
         opacity: 0.9;
       }
 
-      #clear-btn {
-        background: transparent;
-        border: 1px solid #374151;
+      .typing-indicator {
+        display: inline-flex;
+        gap: 0.2rem;
+        align-items: center;
+        height: 1em;
+      }
+
+      .typing-dot {
+        width: 4px;
+        height: 4px;
         border-radius: 999px;
-        color: #9ca3af;
-        font-size: 0.7rem;
-        padding: 0.2rem 0.7rem;
+        background: var(--text-soft);
+        opacity: 0.4;
+        animation: typing-bounce 1s infinite ease-in-out;
+      }
+
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      /* Settings drawer (simple) */
+      #settings-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 30;
+      }
+
+      #settings-panel {
+        width: 100%;
+        max-width: 360px;
+        background: var(--bg-alt);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        padding: 0.9rem 1rem 1.1rem;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+        animation: fade-in-up 0.16s ease forwards;
+      }
+
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.7rem;
+      }
+
+      .settings-header h2 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .settings-section {
+        margin-bottom: 0.7rem;
+      }
+
+      .settings-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-soft);
+        margin-bottom: 0.35rem;
+      }
+
+      .settings-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        gap: 0.5rem;
+      }
+
+      .pill-toggle {
+        border-radius: 999px;
+        padding: 0.1rem;
+        border: 1px solid var(--border);
+        display: inline-flex;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .pill-toggle button {
+        border: none;
+        background: transparent;
+        color: var(--text-soft);
+        font-size: 0.78rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
         cursor: pointer;
       }
 
-      #clear-btn:hover {
-        border-color: #6b7280;
-        color: #e5e7eb;
+      .pill-toggle button.active {
+        background: var(--accent);
+        color: var(--bubble-user-text);
+      }
+
+      .settings-close-btn {
+        border: none;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes typing-bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.2;
+        }
+        30% {
+          transform: translateY(-3px);
+          opacity: 0.7;
+        }
       }
 
       @media (max-width: 600px) {
         header {
-          font-size: 0.85rem;
+          padding-inline: 0.7rem;
         }
-        .bubble {
-          font-size: 0.85rem;
+        #chat {
+          padding-inline: 0.7rem;
         }
-        #send {
-          padding: 0 0.8rem;
+        #input-area {
+          padding-inline: 0.7rem;
         }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div>Lite AI Chat</div>
-      <button id="clear-btn">Clear</button>
-    </header>
+    <div class="app">
+      <header>
+        <div class="brand">
+          <div class="brand-icon">
+            <i class="fa-regular fa-message"></i>
+          </div>
+          <div>
+            <div class="brand-text-main">Lite AI Chat</div>
+            <div class="brand-text-sub">Minimal, fast, personal</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="theme-toggle" title="Toggle theme">
+            <i class="fa-regular fa-moon" id="theme-icon"></i>
+          </button>
+          <button class="icon-btn" id="settings-btn" title="Settings">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Settings</span>
+          </button>
+          <button class="icon-btn" id="clear-btn" title="Clear chat">
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
+        </div>
+      </header>
 
-    <div id="error-bar"><span></span></div>
-    <div id="status"></div>
+      <div id="error-bar"><span></span></div>
+      <div id="status"></div>
 
-    <div id="chat"></div>
+      <div id="chat"></div>
 
-    <div id="input-area">
-      <textarea
-        id="prompt"
-        rows="1"
-        placeholder="Ask me anything..."
-      ></textarea>
-      <button id="send">Send</button>
+      <div id="input-area">
+        <div class="input-row">
+          <textarea
+            id="prompt"
+            rows="1"
+            placeholder="Ask me anything..."
+          ></textarea>
+          <button id="send">
+            <i class="fa-solid fa-arrow-up"></i>
+            <span>Send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings overlay -->
+    <div id="settings-overlay">
+      <div id="settings-panel">
+        <div class="settings-header">
+          <h2>Settings</h2>
+          <button class="settings-close-btn" id="settings-close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Appearance</div>
+          <div class="settings-row">
+            <span>Theme</span>
+            <div class="pill-toggle" id="theme-toggle-group">
+              <button data-theme="dark">Dark</button>
+              <button data-theme="light">Light</button>
+              <button data-theme="auto">Auto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Info</div>
+          <div class="settings-row">
+            <span style="font-size: 0.78rem; color: var(--text-soft)">
+              This is a personal, lightweight chat UI. Use it within your
+              device’s and school’s rules.
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -209,13 +557,20 @@
       const errorBar = document.getElementById("error-bar");
       const errorText = errorBar.querySelector("span");
       const clearBtn = document.getElementById("clear-btn");
+      const themeToggleBtn = document.getElementById("theme-toggle");
+      const themeIcon = document.getElementById("theme-icon");
+      const settingsBtn = document.getElementById("settings-btn");
+      const settingsOverlay = document.getElementById("settings-overlay");
+      const settingsClose = document.getElementById("settings-close");
+      const themeToggleGroup = document.getElementById("theme-toggle-group");
 
-      // initial system message in memory (not shown as a bubble unless you want)
+      const THEME_KEY = "lite-ai-theme";
+
       let messages = [
         {
           role: "system",
           content:
-            "You are a helpful, concise assistant running in a lightweight personal chat UI.",
+            "You are a helpful, concise assistant running in a minimalist personal chat UI. Keep replies compact unless asked.",
         },
       ];
 
@@ -252,24 +607,77 @@
         container.appendChild(bubble);
         chatEl.appendChild(container);
         chatEl.scrollTop = chatEl.scrollHeight;
+
+        return bubble;
+      }
+
+      function addTypingIndicator() {
+        const container = document.createElement("div");
+        container.className = "message assistant";
+
+        const roleEl = document.createElement("div");
+        roleEl.className = "role";
+        roleEl.textContent = "Assistant";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+
+        const typing = document.createElement("div");
+        typing.className = "typing-indicator";
+
+        for (let i = 0; i < 3; i++) {
+          const dot = document.createElement("div");
+          dot.className = "typing-dot";
+          typing.appendChild(dot);
+        }
+
+        bubble.appendChild(typing);
+        container.appendChild(roleEl);
+        container.appendChild(bubble);
+        chatEl.appendChild(container);
+        chatEl.scrollTop = chatEl.scrollHeight;
+
+        return container;
+      }
+
+      function removeTypingIndicator(container) {
+        if (container && container.parentNode) {
+          container.parentNode.removeChild(container);
+        }
+      }
+
+      function typeText(bubble, text, speed = 18) {
+        bubble.textContent = "";
+        let i = 0;
+
+        return new Promise((resolve) => {
+          const interval = setInterval(() => {
+            bubble.textContent += text.charAt(i);
+            i++;
+            chatEl.scrollTop = chatEl.scrollHeight;
+            if (i >= text.length) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, speed);
+        });
       }
 
       async function sendMessage() {
         const text = promptEl.value.trim();
         if (!text) return;
 
-        // hide old errors
         errorBar.style.display = "none";
         setStatus("Talking to the model...");
 
-        // add user message to UI + memory
         addMessage("user", text);
         messages.push({ role: "user", content: text });
 
-        // reset input
         promptEl.value = "";
         promptEl.style.height = "auto";
         sendBtn.disabled = true;
+
+        const typingContainer = addTypingIndicator();
 
         try {
           const res = await fetch("/api/chat", {
@@ -282,8 +690,10 @@
           try {
             data = await res.json();
           } catch (e) {
-            // ignore JSON parse error, we’ll handle with res.ok
+            // ignore
           }
+
+          removeTypingIndicator(typingContainer);
 
           if (!res.ok) {
             console.error("API error:", data);
@@ -291,24 +701,36 @@
               (data && (data.details || data.error)) ||
               `Request failed with status ${res.status}`;
             showError(msg);
-            addMessage(
+            const bubble = addMessage(
               "assistant",
               "I couldn't respond because of an error: " + msg
             );
+            messages.push({
+              role: "assistant",
+              content: "I couldn't respond because of an error: " + msg,
+            });
             return;
           }
 
           const replyContent =
             (data && data.reply && data.reply.content) || "[No response]";
-          addMessage("assistant", replyContent);
+
+          const bubble = addMessage("assistant", "");
+          await typeText(bubble, replyContent);
           messages.push({ role: "assistant", content: replyContent });
         } catch (err) {
           console.error("Network or JS error:", err);
+          removeTypingIndicator(typingContainer);
           showError(err.message || "Unknown error");
-          addMessage(
+          const bubble = addMessage(
             "assistant",
             "Error talking to the model. Check your API key or network."
           );
+          messages.push({
+            role: "assistant",
+            content:
+              "Error talking to the model. Check your API key or network.",
+          });
         } finally {
           sendBtn.disabled = false;
           setStatus("");
@@ -316,10 +738,8 @@
         }
       }
 
-      // send on button click
       sendBtn.addEventListener("click", sendMessage);
 
-      // send on Enter (Shift+Enter → newline)
       promptEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
@@ -327,31 +747,96 @@
         }
       });
 
-      // auto-resize textarea
       promptEl.addEventListener("input", () => {
         promptEl.style.height = "auto";
         promptEl.style.height = promptEl.scrollHeight + "px";
       });
 
-      // clear chat
       clearBtn.addEventListener("click", () => {
         chatEl.innerHTML = "";
         messages = [
           {
             role: "system",
             content:
-              "You are a helpful, concise assistant running in a lightweight personal chat UI.",
+              "You are a helpful, concise assistant running in a minimalist personal chat UI. Keep replies compact unless asked.",
           },
         ];
         setStatus("");
         errorBar.style.display = "none";
       });
 
-      // optional: start with a little system hint
-      addMessage(
-        "system",
-        "This is your personal Lite AI chat. Type a message below to start."
-      );
+      function applyTheme(theme) {
+        const prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+        let resolved = theme;
+        if (theme === "auto") {
+          resolved = prefersDark ? "dark" : "light";
+        }
+
+        if (resolved === "light") {
+          document.body.classList.add("light");
+          themeIcon.classList.remove("fa-moon");
+          themeIcon.classList.add("fa-sun");
+        } else {
+          document.body.classList.remove("light");
+          themeIcon.classList.add("fa-moon");
+          themeIcon.classList.remove("fa-sun");
+        }
+
+        Array.from(themeToggleGroup.querySelectorAll("button")).forEach((btn) =>
+          btn.classList.toggle("active", btn.dataset.theme === theme)
+        );
+      }
+
+      function loadTheme() {
+        const stored = localStorage.getItem(THEME_KEY) || "dark";
+        applyTheme(stored);
+        return stored;
+      }
+
+      function saveTheme(theme) {
+        localStorage.setItem(THEME_KEY, theme);
+      }
+
+      themeToggleBtn.addEventListener("click", () => {
+        const current = localStorage.getItem(THEME_KEY) || "dark";
+        const next = current === "dark" ? "light" : "dark";
+        saveTheme(next);
+        applyTheme(next);
+      });
+
+      themeToggleGroup.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-theme]");
+        if (!btn) return;
+        const theme = btn.dataset.theme;
+        saveTheme(theme);
+        applyTheme(theme);
+      });
+
+      settingsBtn.addEventListener("click", () => {
+        settingsOverlay.style.display = "flex";
+      });
+
+      settingsClose.addEventListener("click", () => {
+        settingsOverlay.style.display = "none";
+      });
+
+      settingsOverlay.addEventListener("click", (e) => {
+        if (e.target === settingsOverlay) {
+          settingsOverlay.style.display = "none";
+        }
+      });
+
+      window.addEventListener("load", () => {
+        const theme = loadTheme();
+        applyTheme(theme);
+        const intro = addMessage(
+          "system",
+          "This is your personal Lite AI chat. Type a message below to start."
+        );
+      });
     </script>
   </body>
 </html>
