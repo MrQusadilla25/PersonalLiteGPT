@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lite ChatGPT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #0f172a;
+        color: #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #1f2937;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      #chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+      .message {
+        margin-bottom: 0.75rem;
+        max-width: 800px;
+      }
+      .role {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        opacity: 0.7;
+        margin-bottom: 0.2rem;
+      }
+      .user .bubble {
+        background: #2563eb;
+        align-self: flex-end;
+      }
+      .assistant .bubble {
+        background: #111827;
+        border: 1px solid #1f2937;
+      }
+      .bubble {
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.6rem;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+      }
+      #input-area {
+        padding: 0.5rem;
+        border-top: 1px solid #1f2937;
+        display: flex;
+        gap: 0.5rem;
+      }
+      #prompt {
+        flex: 1;
+        resize: none;
+        padding: 0.5rem;
+        border-radius: 0.4rem;
+        border: 1px solid #374151;
+        background: #020617;
+        color: #e5e7eb;
+        font-size: 0.9rem;
+        max-height: 6rem;
+      }
+      #send {
+        padding: 0 1rem;
+        border-radius: 0.4rem;
+        border: none;
+        background: #22c55e;
+        color: #022c22;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      #send:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Lite ChatGPT (Personal)</header>
+    <div id="chat"></div>
+    <div id="input-area">
+      <textarea
+        id="prompt"
+        rows="1"
+        placeholder="Ask me anything..."
+      ></textarea>
+      <button id="send">Send</button>
+    </div>
+
+    <script>
+      const chatEl = document.getElementById("chat");
+      const promptEl = document.getElementById("prompt");
+      const sendBtn = document.getElementById("send");
+
+      let messages = [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant in a very lightweight personal chat app. Be concise and clear.",
+        },
+      ];
+
+      function addMessage(role, content) {
+        const container = document.createElement("div");
+        container.className = `message ${role}`;
+
+        const roleEl = document.createElement("div");
+        roleEl.className = "role";
+        roleEl.textContent = role === "user" ? "You" : "Assistant";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = content;
+
+        container.appendChild(roleEl);
+        container.appendChild(bubble);
+        chatEl.appendChild(container);
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const text = promptEl.value.trim();
+        if (!text) return;
+
+        // show user message
+        addMessage("user", text);
+        messages.push({ role: "user", content: text });
+        promptEl.value = "";
+        promptEl.style.height = "auto";
+
+        sendBtn.disabled = true;
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages }),
+          });
+
+          if (!res.ok) {
+            throw new Error("Request failed");
+          }
+
+          const data = await res.json();
+          const reply = data.reply?.content || "[No response]";
+          addMessage("assistant", reply);
+
+          messages.push({
+            role: "assistant",
+            content: reply,
+          });
+        } catch (err) {
+          console.error(err);
+          addMessage(
+            "assistant",
+            "Error talking to the model. Check your API key or network."
+          );
+        } finally {
+          sendBtn.disabled = false;
+          promptEl.focus();
+        }
+      }
+
+      // Send on button click
+      sendBtn.addEventListener("click", sendMessage);
+
+      // Send on Enter, newline on Shift+Enter
+      promptEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Auto-resize textarea
+      promptEl.addEventListener("input", () => {
+        promptEl.style.height = "auto";
+        promptEl.style.height = promptEl.scrollHeight + "px";
+      });
+    </script>
+  </body>
+</html>
