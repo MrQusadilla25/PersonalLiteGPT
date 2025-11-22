@@ -183,9 +183,18 @@
         padding: 0.55rem 0.8rem;
         border-radius: 0.9rem;
         font-size: 0.9rem;
-        white-space: pre-wrap;
+        white-space: normal;
         word-wrap: break-word;
         line-height: 1.4;
+      }
+
+      .bubble ol {
+        margin: 0.2rem 0 0.2rem 1.25rem;
+        padding: 0;
+      }
+
+      .bubble li {
+        margin-bottom: 0.15rem;
       }
 
       .user .bubble {
@@ -346,7 +355,7 @@
         animation-delay: 0.3s;
       }
 
-      /* Settings drawer (simple) */
+      /* Settings drawer */
       #settings-overlay {
         position: fixed;
         inset: 0;
@@ -574,6 +583,80 @@
         },
       ];
 
+      // --- Markdown rendering (basic) ---
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function renderInlineMarkdown(text) {
+        // escape HTML first
+        let t = escapeHtml(text);
+
+        // bold: **text**
+        t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+        // italic: _text_ or *text*
+        t = t.replace(/(\*|_)([^*_]+?)\1/g, "<em>$2</em>");
+
+        // line breaks
+        t = t.replace(/\n/g, "<br>");
+
+        return t;
+      }
+
+      function renderMarkdown(text) {
+        // handle numbered lists:
+        // lines like "1. item", "2. item"
+        const lines = text.split("\n");
+        let inList = false;
+        let html = "";
+        let listBuffer = [];
+
+        function flushList() {
+          if (!listBuffer.length) return;
+          html += "<ol>";
+          for (const item of listBuffer) {
+            html += "<li>" + renderInlineMarkdown(item) + "</li>";
+          }
+          html += "</ol>";
+          listBuffer = [];
+        }
+
+        for (let rawLine of lines) {
+          const line = rawLine.trim();
+
+          const match = line.match(/^(\d+)\.\s+(.*)$/);
+          if (match) {
+            inList = true;
+            listBuffer.push(match[2]);
+          } else {
+            if (inList) {
+              flushList();
+              inList = false;
+            }
+            if (line.length > 0) {
+              html += "<p>" + renderInlineMarkdown(rawLine) + "</p>";
+            } else {
+              html += "<br>";
+            }
+          }
+        }
+
+        if (inList) {
+          flushList();
+        }
+
+        return html || renderInlineMarkdown(text);
+      }
+
+      // --- UI helpers ---
+
       function showError(msg) {
         errorText.textContent = msg;
         errorBar.style.display = "block";
@@ -599,9 +682,11 @@
 
         const bubble = document.createElement("div");
         bubble.className = "bubble";
-        bubble.textContent = content;
 
         if (role === "system") container.classList.add("system");
+
+        // use markdown renderer
+        bubble.innerHTML = renderMarkdown(content);
 
         container.appendChild(roleEl);
         container.appendChild(bubble);
@@ -646,17 +731,20 @@
         }
       }
 
+      // typing: show raw text while typing, then render markdown at the end
       function typeText(bubble, text, speed = 18) {
         bubble.textContent = "";
         let i = 0;
 
         return new Promise((resolve) => {
           const interval = setInterval(() => {
-            bubble.textContent += text.charAt(i);
+            bubble.textContent = text.slice(0, i);
             i++;
             chatEl.scrollTop = chatEl.scrollHeight;
-            if (i >= text.length) {
+            if (i > text.length) {
               clearInterval(interval);
+              // now convert whole content to markdown HTML
+              bubble.innerHTML = renderMarkdown(text);
               resolve();
             }
           }, speed);
@@ -722,7 +810,7 @@
           console.error("Network or JS error:", err);
           removeTypingIndicator(typingContainer);
           showError(err.message || "Unknown error");
-          const bubble = addMessage(
+          addMessage(
             "assistant",
             "Error talking to the model. Check your API key or network."
           );
@@ -764,6 +852,8 @@
         setStatus("");
         errorBar.style.display = "none";
       });
+
+      // --- Theme + settings ---
 
       function applyTheme(theme) {
         const prefersDark =
@@ -832,7 +922,7 @@
       window.addEventListener("load", () => {
         const theme = loadTheme();
         applyTheme(theme);
-        const intro = addMessage(
+        addMessage(
           "system",
           "This is your personal Lite AI chat. Type a message below to start."
         );
