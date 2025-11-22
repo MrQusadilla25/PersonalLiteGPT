@@ -1,12 +1,12 @@
 // api/chat.js
 
-const Groq = require("groq-sdk");
+const Groq = require("groq-sdk").default; // NOTE: .default is important!
 
-// Client using your env var
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const client = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 module.exports = async (req, res) => {
-  // Only allow POST
   if (req.method !== "POST") {
     res.statusCode = 405;
     res.setHeader("Content-Type", "application/json");
@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Parse the body manually (required on Vercel)
+    // Read and parse JSON body
     let body = "";
     await new Promise((resolve, reject) => {
       req.on("data", (chunk) => (body += chunk));
@@ -23,18 +23,34 @@ module.exports = async (req, res) => {
       req.on("error", reject);
     });
 
-    const parsed = JSON.parse(body || "{}");
-
-    const { messages } = parsed;
-
-    if (!messages) {
+    let parsed;
+    try {
+      parsed = JSON.parse(body || "{}");
+    } catch (e) {
       res.statusCode = 400;
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ error: "'messages' missing" }));
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
       return;
     }
 
-    // Call Groq with Llama 3.1 70B (AMAZING model, totally free)
+    const { messages } = parsed;
+
+    if (!messages || !Array.isArray(messages)) {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      res.end(
+        JSON.stringify({ error: "Missing or invalid 'messages' array" })
+      );
+      return;
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "GROQ_API_KEY is not set" }));
+      return;
+    }
+
     const completion = await client.chat.completions.create({
       model: "llama3-70b-8192",
       messages,
@@ -47,13 +63,13 @@ module.exports = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ reply }));
   } catch (err) {
-    console.error(err);
+    console.error("GROQ ERROR:", err);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
     res.end(
       JSON.stringify({
         error: "Groq API error",
-        details: err.message,
+        details: err.message || String(err),
       })
     );
   }
