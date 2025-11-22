@@ -1,6 +1,5 @@
 // api/chat.js
-
-const Groq = require("groq-sdk").default; // NOTE: .default is important!
+const Groq = require("groq-sdk").default; // IMPORTANT: .default for CommonJS
 
 const client = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -51,8 +50,11 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // 🔥 Use Groq's latest recommended 70B model
     const completion = await client.chat.completions.create({
-      model: "llama3-70b-8192",
+      model: "llama-3.3-70b-versatile",
+      // If you want cheaper/faster instead, use:
+      // model: "llama-3.1-8b-instant",
       messages,
       temperature: 0.6,
     });
